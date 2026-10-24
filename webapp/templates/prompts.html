@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Yonetimi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <header style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="header-title">
+                <h1>Prompt Yonetimi</h1>
+                <div class="header-subtitle">Gemini prompt'larini duzenle ve onizle</div>
+            </div>
+            <div class="header-actions">
+                <a href="{{ url_for('dashboard') }}" class="btn btn-outline"
+                   style="text-decoration: none; padding: 0.5rem 1rem; border-radius: 4px;">
+                    Panele Don
+                </a>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline"
+                   style="text-decoration: none; padding: 0.5rem 1rem; border-radius: 4px;">
+                    Cikis Yap
+                </a>
+            </div>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert {{ 'alert-danger' if category == 'error' else 'alert-success' }}"
+                         role="alert">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <section style="margin-top: 1rem;">
+            <form method="get" action="{{ url_for('prompts_page') }}" style="margin-bottom: 1rem;">
+                <label for="prompt-select"><strong>Prompt:</strong></label>
+                <select id="prompt-select" name="name" onchange="this.form.submit()"
+                        style="padding: 0.4rem; min-width: 260px;">
+                    {% for n in names %}
+                        <option value="{{ n }}" {% if n == selected %}selected{% endif %}>
+                            {{ labels[n] }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+
+            <p>
+                <strong>Durum:</strong>
+                {% if has_override %}
+                    kisisel override aktif (<code>data/prompts/{{ selected }}.md</code>)
+                {% else %}
+                    varsayilan dosya (<code>prompts/{{ selected }}.md</code>)
+                {% endif %}
+            </p>
+
+            <p>
+                <strong>Kullanilabilir token'lar:</strong>
+                {% for t in tokens %}
+                    <code>{{ '{{' ~ t ~ '}}' }}</code>
+                {% endfor %}
+            </p>
+
+            <form method="post" action="{{ url_for('prompts_save') }}">
+                <input type="hidden" name="name" value="{{ selected }}">
+                <textarea name="text" rows="28"
+                          style="width: 100%; font-family: monospace; font-size: 0.85rem; padding: 0.6rem; box-sizing: border-box;">{{ text }}</textarea>
+                <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap;">
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                    <button type="submit" class="btn btn-outline"
+                            formaction="{{ url_for('prompts_preview') }}">Onizle</button>
+                    <button type="submit" class="btn btn-outline"
+                            formaction="{{ url_for('prompts_reset') }}"
+                            onclick="return confirm('Varsayilan prompt bu dosyaya kopyalanacak. Devam?');">
+                        Varsayilana Don
+                    </button>
+                </div>
+            </form>
+
+            {% if missing %}
+                <div class="alert alert-danger" role="alert" style="margin-top: 1rem;">
+                    Eksik token(lar): {{ missing|join(', ') }}. Kaydetmeyi engellemez;
+                    ancak calisma sirasinda hata verebilir.
+                </div>
+            {% endif %}
+
+            {% if preview %}
+                <h3 style="margin-top: 1.5rem;">Kuru onizleme (ornek degerlerle)</h3>
+                <pre style="background: #f6f8fa; border: 1px solid #ddd; padding: 0.75rem; overflow: auto; white-space: pre-wrap;">{{ preview }}</pre>
+            {% endif %}
+        </section>
+    </div>
+</body>
+
+</html>

@@ -9,6 +9,17 @@ from flask import Flask, render_template, jsonify, request, send_from_directory,
 from datetime import timedelta
 from src.tracker import JobTracker
 from src.status_logger import StatusLogger
+from src.prompts import (
+    PROMPT_LABELS,
+    PROMPT_TOKENS,
+    has_override,
+    load_prompt,
+    missing_tokens,
+    preview_prompt,
+    prompt_names,
+    reset_prompt,
+    save_prompt,
+)
 from dotenv import load_dotenv
 from werkzeug.security import check_password_hash
 import json
@@ -254,6 +265,68 @@ def download_file(filename):
     if download_name:
         return send_from_directory(OUTPUT_DIR, filename, as_attachment=True, download_name=download_name)
     return send_from_directory(OUTPUT_DIR, filename)
+
+# --- Prompt yonetimi ---
+
+def _prompt_context(name, text=None, preview=None, missing=None):
+    names = prompt_names()
+    if name not in names:
+        name = names[0]
+    return {
+        'names': names,
+        'labels': PROMPT_LABELS,
+        'tokens': PROMPT_TOKENS[name],
+        'selected': name,
+        'text': load_prompt(name) if text is None else text,
+        'has_override': has_override(name),
+        'preview': preview,
+        'missing': missing or [],
+    }
+
+
+@app.route('/prompts')
+def prompts_page():
+    name = request.args.get('name', prompt_names()[0])
+    return render_template('prompts.html', **_prompt_context(name))
+
+
+@app.route('/prompts/save', methods=['POST'])
+def prompts_save():
+    name = request.form.get('name', '')
+    try:
+        save_prompt(name, request.form.get('text', ''))
+        flash(f'"{PROMPT_LABELS[name]}" kaydedildi.', 'success')
+    except (ValueError, KeyError, FileNotFoundError) as e:
+        flash(f'Kaydedilemedi: {e}', 'error')
+    return redirect(url_for('prompts_page', name=name))
+
+
+@app.route('/prompts/reset', methods=['POST'])
+def prompts_reset():
+    name = request.form.get('name', '')
+    try:
+        reset_prompt(name)
+        flash(f'"{PROMPT_LABELS.get(name, name)}" varsayilana donduruldu.', 'success')
+    except (ValueError, KeyError, FileNotFoundError) as e:
+        flash(f'Sifirlanamadi: {e}', 'error')
+    return redirect(url_for('prompts_page', name=name))
+
+
+@app.route('/prompts/preview', methods=['POST'])
+def prompts_preview():
+    name = request.form.get('name', '')
+    text = request.form.get('text', '')
+    if name not in PROMPT_LABELS:
+        flash('Gecersiz prompt secimi.', 'error')
+        return redirect(url_for('prompts_page'))
+    ctx = _prompt_context(
+        name,
+        text=text,
+        preview=preview_prompt(name, text),
+        missing=missing_tokens(name, text),
+    )
+    return render_template('prompts.html', **ctx)
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)

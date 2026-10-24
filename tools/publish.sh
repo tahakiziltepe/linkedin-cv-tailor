@@ -27,11 +27,13 @@ FILELIST=(
     README.md CHANGELOG.md CONTRIBUTING.md LICENSE Makefile config.toml
     doctor.py main.py run_daily.sh
     src/job_search.py src/cv_tailor.py src/pdf_generator.py
-    src/tracker.py src/notifier.py src/status_logger.py
+    src/tracker.py src/notifier.py src/status_logger.py src/prompts.py
     webapp/web_app.py webapp/templates/login.html webapp/templates/dashboard.html
+    webapp/templates/prompts.html
     webapp/static/css/styles.css webapp/static/js/main.js
     templates/base_cv.example.typ
     data/database/users.example.json
+    prompts/suitability.md prompts/tailor_cv.md prompts/fix_typst.md
     tools/hash_users.py tools/load_config.py tools/publish.sh
 )
 cd "$BASE_DIR"

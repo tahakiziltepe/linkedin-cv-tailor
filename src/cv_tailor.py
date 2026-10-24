@@ -7,6 +7,8 @@ from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 
+from src.prompts import render_prompt
+
 load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
@@ -75,34 +77,7 @@ def _check_job_suitability_api(job_description: str) -> bool:
 
     logger.info("Checking job suitability...")
     
-    prompt = f"""
-    # ROLE
-    You are a highly specialized Job Classification Engine.
-
-    # PRIMARY TASK
-    Your sole function is to analyze the provided job description and classify it into one of two categories based on the criteria below. Your response will be the category label itself.
-
-    # CLASSIFICATION CRITERIA
-
-    ## Category 1: "YES"
-    This category includes roles that are fundamentally data-centric and part of a core data team.
-    - **Keywords and Responsibilities**: Look for terms like ETL, Data Warehouse (DWH), Business Intelligence (BI), SQL, data modeling, data pipelines, data analytics, data governance, reporting, dashboards.
-    - **Example Titles**: Data Engineer, DWH Developer, DWH Developer, Business Intelligence Specialist, Business Intelligence Developer.
-
-    ## Category 2: "NO"
-    This category includes all other roles, even if they interact with data peripherally.
-    - **Keywords and Responsibilities**: Look for terms like data science, front-end/back-end development, API design, mobile application (iOS/Android), system administration, cloud infrastructure (unless purely for data platforms), UI/UX design, customer support, marketing analytics, sales operations, internship roles.
-    - **Example Titles**: Assistant Specialist (Uzman Yardımcısı), Intern (Stajyer), Data Scientist, Business Analyst, Software Engineer, Web Developer, Mobile Developer, Systems Administrator, DevOps Engineer (general), Customer Experience Analyst, Product Owner, Configuration Engineer, Observability Engineer.
-    
-    # STRICT OUTPUT RULES
-    1.  **Single Word Response**: Your output MUST be a single word.
-    2.  **Valid Words Only**: The ONLY valid responses are 'YES' or 'NO'.
-    3.  **No Extra Content**: Do NOT provide explanations, context, or any conversational text.
-    4.  **Character Prohibition**: You MUST NOT use any special characters, including but not limited to '#' and ','. Your response must be the word itself and nothing more.
-
-    # JOB DESCRIPTION TO CLASSIFY
-    {job_description}
-    """
+    prompt = render_prompt("suitability", JOB_DESCRIPTION=job_description)
  
     response = client.models.generate_content(
         model=GEMINI_MODEL_FLASH,
@@ -135,92 +110,11 @@ def _tailor_cv_api(base_cv_content: str, job_description: str) -> str:
 
     logger.info("Tailoring CV with Gemini...")
     
-    prompt = f"""
-    # PERSPECTIVE
-    You are an elite career strategist and an expert CV editor specializing in Data Engineering and Analytics roles. Your precision ensures the candidate's CV is not just "tailored" but "weaponized" for the specific role.
-
-    # PRIMARY OBJECTIVE
-    Transform the `BASE_CV_TYPST` into a high-impact document by selecting the most strategic responsibilities and achievements from the provided databases.
-
-    # CORE TASK
-    1.  **Analyze**: Scrutinize the provided `BASE_CV_TYPST` and the `JOB_DESCRIPTION`.
-    2.  **Identify**: Extract key skills, qualifications, and keywords from the `JOB_DESCRIPTION`.
-    3.  **Strategically Select, Rewrite & Reorder**:
-        *   **Select for Relevance**: From the comprehensive list of responsibilities and achievements in the `BASE_CV_TYPST` for the most recent role, you must *select* the most impactful and relevant points that directly map to the `JOB_DESCRIPTION`'s requirements.
-        *   **Reorder for Impact**: Once selected, prioritize and reorder the bullet points to place the most critical information first.
-        *   **Rephrase for Alignment**: Modify the phrasing of the selected bullet points to incorporate keywords from the job description without losing the original meaning or truthfulness.
-        *   **Structure the Latest Role**: For the most recent job experience, you MUST structure its description by selecting:
-            *   Exactly three (3) bullet points for the `Job Description`.
-            *   Exactly two (2) bullet points for the `Notable Achievements`. (If multiple versions of an achievement exist, e.g., V_SHORT/V_LONG, select the one that best fits the tone and detail level required by the job ad).
-        *   **Generate Profile Section (MANDATORY)**:
-            *   Locate the existing `== Profile` header in the `BASE_CV_TYPST`.
-            *   Read the `Professional Summary Components` comment block immediately following it.
-            *   Select 2-3 most relevant sentences matching the `JOB_DESCRIPTION`.
-            *   **REPLACE** the entire comment block with your generated professional summary paragraph.
-            *   **DO NOT** add a second `== Profile` header. The final output should have exactly one `== Profile` header followed by the summary text.
-        *   **Generate Skills Section**:
-            *   Locate the `== Skills` header and the commented-out skill database in `BASE_CV_TYPST`.
-            *   Analyze the skill categories (e.g., Data Warehousing, Cloud Technologies) and the specific skills listed in the comments.
-            *   For each category, **SELECT** and **PRIORITIZE** skills that are mentioned in or relevant to the `JOB_DESCRIPTION`. Do not place more skills than necessary; focus on quality over quantity.
-            *   **NO HALLUCINATIONS**: You MUST NOT include any skill that is NOT present in the `BASE_CV_TYPST` skill database. If the job asks for "Scala" and you don't have it in your base CV, DO NOT ADD IT.
-            *   **NO REDUNDANCY**: Do not list synonymous skills separately (e.g., if you list "PySpark", do not also list "Apache Spark" or "Spark"). Choose the most specific/relevant term.
-            *   **REPLACE** the existing static list with your tailored, reordered list.
-            *   **SELECTIVE CATEGORIES**: You do not need to list every single category if it is not relevant. For example, if the job is purely Data Engineering, you may omit "Web Development" or weak/irrelevant skills.
-            *   **STRICT FORMAT**: You MUST maintain the exact format: `- *Category Name*: Skill 1, Skill 2, ...`
-    4.  **Formulate Explanation**: Before generating the CV code, formulate a concise explanation of the key changes you made. This summary must detail *what* you changed (e.g., "Generated a tailored Profile focusing on Data Engineering...") and *why* you made those changes. Specifically indicate which section of the job posting the changes were made in reference to.
-    5.  **Generate Final Output**: Construct the final output string. It must begin with the explanation from the previous step, perfectly enclosed within a Typst block comment (`/* ... */`). Immediately following the closing `*/`, append the complete, updated Typst CV code without any intermediate characters or lines.
-
-    # CRITICAL RULES & OUTPUT CONSTRAINTS
-    1.  **NO MARKDOWN**: Do NOT output markdown code blocks (e.g., ```typst ... ```). Output raw code only.
-    2.  **PRESERVE IMPORTS**: Do NOT change imports or variable definitions at the top.
-    3.  **UNCOMMENTED PROFILE**: The `== Profile` section content must be **PLAIN TEXT**, NOT commented out.
-        *   **CORRECT:** `== Profile\nMy tailored summary...`
-        *   **WRONG:** `== Profile\n/* My tailored summary */`
-    4.  **STRICT STRUCTURE PRESERVATION (NO NESTING HALLUCINATION)**: 
-        *   **Do NOT** change the call structure of `#work(...)`. 
-        *   **Do NOT** pass bullet points as arguments to `#work()`.
-        *   The `#work()` function MUST close with a `)`, and the bullet points must follow on new lines as standard Typst list items (starting with `-`).
-
-    # INCORRECT STRUCTURE (DO NOT DO THIS):
-    ```typst
-    #work(
-      title: "...",
-      details: [ - My bullet point ] // WRONG! 'details' param does not exist in base_cv.typ
+    prompt = render_prompt(
+        "tailor_cv",
+        BASE_CV_TYPST=base_cv_content,
+        JOB_DESCRIPTION=job_description,
     )
-    ```
-
-    # CORRECT STRUCTURE (DO THIS):
-    ```typst
-    #work(
-      title: "...",
-      company: "...",
-      dates: ...
-    ) // Function closes here
-    
-    === Job Description
-    - My bullet point 1
-    - My bullet point 2
-    ```
-    
-    5.  **NO HALLUCINATIONS**: Do not invent new parameters for defined functions. Do not use any technical term that is not present in the `BASE_CV_TYPST`.
-    6.  **ONLY TYPST**: The output must be valid, compilable Typst code.
-    7.  **Mandatory Comment Header**: The entire output MUST start with your explanation of changes, enclosed in a Typst block comment (`/* ... */`). There must be no characters, spaces, or newlines before the opening `/*`.
-    8.  **Structure Preservation**: The fundamental Typst structure, commands, and layout of the `BASE_CV_TYPST` must be preserved IDENTICALLY in the CV portion of the output.
-    -   **Content Authenticity**: You MUST NOT invent, fabricate, or exaggerate any information. All skills, experiences, and achievements must be derived directly from the `BASE_CV_TYPST`.
-    -   **Data Preservation (CRITICAL)**: 
-        *   **Do NOT touch the Header**: The name, location, email, github, linkedin, and phone definitions at the top MUST remain character-for-character INDENTICAL. 
-        *   **Preserve Escapes**: You MUST preserve all backslash escapes in contact info. For example, a contact like `you\\@example.com` must remain `you\\@example.com`. Do NOT strip the backslash to `you@example.com`.
-        *   **No "Fixing"**: Do not attempt to "correct" what looks like a typo in the contact info or imports. Leave it exactly as in `BASE_CV_TYPST`.
-    -   **Language & Tone**: Use professional, fluent, and action-oriented English (e.g., "Managed," "Developed," "Accelerated"). The tone should be confident and competent. Preserve technical jargon from the original CV.
-    -   **Length**: The total length of the generated CV should be within +/- 5% of the original `BASE_CV_TYPST`'s content length. Avoid significant shortening or lengthening.
-
-    # INPUT DATA
-    ## BASE_CV_TYPST:
-    {base_cv_content}
-
-    ## JOB_DESCRIPTION:
-    {job_description}
-    """
     
     response = client.models.generate_content(
         model=GEMINI_MODEL_PRO,
@@ -266,22 +160,11 @@ def _fix_typst_code_api(typst_code: str, error_message: str) -> str:
 
     logger.info("Attempting to fix Typst code with Gemini...")
     
-    prompt = f"""
-    You are a Typst expert. The following Typst code failed to compile.
-    
-    ERROR MESSAGE:
-    {error_message}
-    
-    BROKEN TYPST CODE:
-    {typst_code}
-    
-    TASK:
-    Fix the code to resolve the error. 
-    1. Analyze the error message (e.g., "expected integer, found string").
-    2. Locate the problematic line in the code.
-    3. correct the syntax.
-    4. Return ONLY the complete, fixed Typst code. Do not use markdown blocks.
-    """
+    prompt = render_prompt(
+        "fix_typst",
+        ERROR_MESSAGE=error_message,
+        BROKEN_TYPST_CODE=typst_code,
+    )
     
     response = client.models.generate_content(
         model=GEMINI_MODEL_FLASH,

@@ -487,6 +487,44 @@ yayını durdurur:
 
 Acil bir durumda `PUBLISH_SKIP_GUARD=1` ile kontroller atlanabilir.
 
+### 9.7) Prompt'ları özelleştirme
+
+Üç Gemini prompt'u kod içinde değil, ayrı dosyalarda durur:
+
+| Dosya | Görev | Token'lar |
+|---|---|---|
+| `prompts/suitability.md` | İlan uygunluk kontrolü (YES/NO) | `{{JOB_DESCRIPTION}}` |
+| `prompts/tailor_cv.md` | CV uyarlama | `{{BASE_CV_TYPST}}`, `{{JOB_DESCRIPTION}}` |
+| `prompts/fix_typst.md` | Bozuk Typst kodunu onarma | `{{ERROR_MESSAGE}}`, `{{BROKEN_TYPST_CODE}}` |
+
+**İki katman:**
+
+- `prompts/` → varsayılanlar (git takipli, public repoda da bulunur).
+- `data/prompts/` → kişisel düzenlemeler (gitignore'lu). Aynı dosya adı
+  varsa varsayılanın yerine bu kullanılır.
+
+**Web panelinden düzenleme:**
+
+1. Panele giriş yap, üstteki **Prompt'lar** bağlantısına tıkla.
+2. Prompt'u seç, metni düzenle.
+3. **Önizle** ile token'lar örnek değerlerle doldurulmuş halini gör
+   (API çağrısı yapılmaz, kota harcanmaz).
+4. **Kaydet** → değişiklik anında geçerlidir, uygulamayı yeniden başlatmak
+   gerekmez.
+5. **Varsayılana Dön** → varsayılan dosyanın kopyası `data/prompts/` altına
+   yazılır.
+
+**Kurallar:**
+
+- Yer tutucular `{{TOKEN}}` biçimindedir; tek `{` ve `}` karakterleri
+  serbestçe kullanılabilir.
+- Prompt boş olamaz. Eksik token kaydetmeyi engellemez; önizleme uyarır,
+  çalışma sırasında hata verebilir.
+- Her kayıtta eski sürüm `data/prompts_history/<prompt>/` altına zaman
+  damgasıyla yedeklenir; son 20 sürüm tutulur.
+- `data/prompts/` gitignore'lu olduğu için kişisel düzenlemeler public repo'ya
+  gitmez. `prompts/` dosyalarını değiştirirsen bu değişiklik yayınlanır.
+
 ---
 
 *Son güncelleme ve doğrulama: 2026-10-24 — `gemini-3.1-flash-lite-preview` ile

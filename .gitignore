@@ -8,7 +8,6 @@ tests
 
 data/output
 
-prompts
 flask_output_debug.log
 *.log
 
@@ -19,6 +18,10 @@ data/blocked_companies.json
 
 # Kisisel CV - ornek: templates/base_cv.example.typ
 data/base_cv.typ
+
+# Kisisel prompt duzenlemeleri + surum yedekleri
+data/prompts/
+data/prompts_history/
 
 # Kisisel çalıştırma ayarları
 config.local.toml

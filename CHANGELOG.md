@@ -13,3 +13,6 @@
 - `doctor.py` ortam self-testi, `Makefile` hedefleri
 - Operasyon rehberi (5 Dakikada Restore, arıza noktaları, token arıza tablosu)
 - `tools/publish.sh`: private → public snapshot senkronu (geçmiş taşınmaz, kişisel veri taramalı)
+- Prompt'lar ayrı dosyalarda (`prompts/`); web panelinden düzenleme, kuru
+  önizleme, varsayılana dönme ve son 20 sürüm yedeği (`data/prompts/`,
+  `data/prompts_history/`)

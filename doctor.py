@@ -122,6 +122,30 @@ try:
 except Exception as e:
     add("FAIL", "tracker", str(e)[:120])
 
+# 7) prompt dosyalari
+try:
+    from src.prompts import PROMPT_TOKENS, load_prompt, missing_tokens
+
+    problems = []
+    for pname in PROMPT_TOKENS:
+        try:
+            ptext = load_prompt(pname)
+        except FileNotFoundError:
+            problems.append(f"{pname}: dosya yok")
+            continue
+        if not ptext.strip():
+            problems.append(f"{pname}: bos")
+            continue
+        eksik = missing_tokens(pname, ptext)
+        if eksik:
+            problems.append(f"{pname}: eksik token {', '.join(eksik)}")
+    if problems:
+        add("FAIL", "prompt dosyalari", "; ".join(problems))
+    else:
+        add("PASS", f"prompt dosyalari ({len(PROMPT_TOKENS)})")
+except Exception as e:
+    add("FAIL", "prompt dosyalari", str(e)[:120])
+
 fails = sum(1 for lvl in RESULTS if lvl == "FAIL")
 print("\n---")
 if fails:
