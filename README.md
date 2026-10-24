@@ -610,5 +610,6 @@ issue açın.
 ---
 
 *Son güncelleme ve doğrulama: 2026-10-24 — `gemini-3.1-flash-lite-preview` ile
-uçtan uca çalıştırımda 1 ilan işlendi ve PDF üretildi. `make test` 108,
-`make test-clean` 2, `make test-live` 1 test ile geçti. MIT lisanslı (LICENSE).*
+uçtan uca çalıştırımda 1 ilan işlendi ve PDF üretildi. `make test` 113,
+`make test-clean` 2, `make test-live` 1 test ile geçti; GitHub Actions
+offline CI yeşil. MIT lisanslı (LICENSE).*
