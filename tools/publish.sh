@@ -28,6 +28,7 @@ FILELIST=(
     webapp/web_app.py webapp/templates/login.html webapp/templates/dashboard.html
     webapp/static/css/styles.css webapp/static/js/main.js
     templates/base_cv.example.typ
+    data/database/users.example.json
     tools/hash_users.py tools/load_config.py tools/publish.sh
 )
 cd "$BASE_DIR"

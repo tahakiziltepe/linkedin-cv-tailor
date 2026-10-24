@@ -1,0 +1,6 @@
+[
+  {
+    "username": "ornek_kullanici",
+    "password": "scrypt:32768:8:1$R0sp4SdiHqLpjipJ$370717d208a10566e2485f86b03c8a0a4ffb1c390ec9b05f91e88d162c95b95ba86941018469a6635b03e78f51e44fc515bc7d120ff548238dd8d4e6bdd1dc43"
+  }
+]
