@@ -43,7 +43,7 @@ def history(main_module):
 
 
 def test_happy_path_generates_pdf_and_tracks(main_module, monkeypatch):
-    main_module.render_pdf = fake_render_ok
+    monkeypatch.setattr(main_module, "render_pdf", fake_render_ok)
     notifier = run(main_module, monkeypatch, [dict(SAMPLE_JOB)])
 
     entries = history(main_module)
@@ -57,7 +57,7 @@ def test_happy_path_generates_pdf_and_tracks(main_module, monkeypatch):
 
 
 def test_unsuitable_job_is_logged_not_notified(main_module, monkeypatch):
-    main_module.render_pdf = fake_render_ok
+    monkeypatch.setattr(main_module, "render_pdf", fake_render_ok)
     notifier = run(main_module, monkeypatch, [dict(SAMPLE_JOB)], suitable=False)
 
     entries = history(main_module)
@@ -70,7 +70,7 @@ def test_unsuitable_job_is_logged_not_notified(main_module, monkeypatch):
 def test_blocked_company_is_skipped(main_module, monkeypatch):
     blocked = main_module.DATA_DIR / "blocked_companies.json"
     blocked.write_text(json.dumps(["ornek a.s."]), encoding="utf-8")
-    main_module.render_pdf = fake_render_ok
+    monkeypatch.setattr(main_module, "render_pdf", fake_render_ok)
     notifier = run(main_module, monkeypatch, [dict(SAMPLE_JOB)])
 
     entries = history(main_module)
@@ -89,14 +89,14 @@ def test_duplicate_job_skipped(main_module, monkeypatch):
             "pdf_path": None,
         }
     )
-    main_module.render_pdf = fake_render_ok
+    monkeypatch.setattr(main_module, "render_pdf", fake_render_ok)
     run(main_module, monkeypatch, [dict(SAMPLE_JOB)])
     assert len(history(main_module)) == 1
 
 
 def test_missing_description_skipped(main_module, monkeypatch):
     job = dict(SAMPLE_JOB, description="")
-    main_module.render_pdf = fake_render_ok
+    monkeypatch.setattr(main_module, "render_pdf", fake_render_ok)
     run(main_module, monkeypatch, [job])
     assert history(main_module) == []
 
