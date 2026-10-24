@@ -1,0 +1,41 @@
+name: tests
+
+# Offline test paketi: Gemini / Telegram / JobSpy cagrilari mock'lanir.
+# API anahtari veya network erisimi gerekmez; bu yuzden PR'larda guvenle calisir.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    env:
+      # doctor.py --offline anahtarlarin varligini kontrol eder, aga cikmaz.
+      GEMINI_API_KEY: ci-dummy-key
+      SECRET_KEY: ci-dummy-secret
+      AUTO_PUSH: "0"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: uv kur
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Bagimliliklari kur
+        run: uv sync --frozen
+
+      - name: Yayin oncesi kontrol (py_compile + doctor + offline testler)
+        run: make check
+
+      - name: Temiz makine simulasyonu
+        run: make test-clean

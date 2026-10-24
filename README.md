@@ -3,6 +3,7 @@
 ![Python](https://img.shields.io/badge/python-3.12+-blue.svg)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 ![uv](https://img.shields.io/badge/uv-managed-purple.svg)
+![tests](https://github.com/tahakiziltepe/linkedin-cv-tailor/actions/workflows/tests.yml/badge.svg)
 
 **Yasal uyarı (Disclaimer):** Bu araç LinkedIn üzerine otomatik arama yapar
 (JobSpy); scraping bazı şartlarda LinkedIn ToS ile ters düşebilir. Aracı
@@ -13,6 +14,10 @@ verilerin paylaşımı konusunda kendi kararını ver.
 > Bu doküman, projeye **herhangi bir zamanda** (1 gün sonra da 1 yıl sonra da)
 > geri döndüğünde sıfırdan çalıştırmak için gereken her şeyi içerir.
 > Hızlıca çalıştırmak için "5 Dakikada Restore" bölümünden başla, detaylar sonra gelir.
+>
+> **Katkıda bulunmak istiyorsan:** API anahtarı gerekmez — `uv sync && make test`
+> yeterli. Ayrıntılar için [§10](#10-katkıda-bulunma) ve
+> [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
@@ -450,6 +455,11 @@ günlük turları incelemenin en hızlı yolu bu logtur.
 
 ### 9.6) Geliştirme ve yayın akışı
 
+> **Not:** Bu bölüm **bakımcının** yayın akışıdır. Katkıda bulunacaksanız
+> fork'layıp PR açın; ayrıntılar [§10](#10-katkıda-bulunma) ve
+> [CONTRIBUTING.md](CONTRIBUTING.md). "Public repoya doğrudan commit
+> atılmaz" kuralı bakımcı içindir, katkı PR'larını bağlamaz.
+
 Bu proje iki ayrı yerde yaşar; ikisini karıştırmayın:
 
 | Ne | Nerede | Nasıl |
@@ -562,6 +572,40 @@ kapısı) kullanılabilir; ikisi de yüksek sesli uyarı verir.
 **Yeni test ekleme:** `tests/test_*.py` dosyasına yaz; gerçek `data/`
 dizinine yazma, `tmp_path` kullan. Ağ/API çağrısı yapacak testleri
 `@pytest.mark.live` ile işaretle; bunlar `make test` içinde çalışmaz.
+
+---
+
+## 10) Katkıda bulunma
+
+Katkılar açık. **API anahtarı gerekmez:** `uv sync && make test` tüm offline
+paketi çalıştırır (Gemini / Telegram / JobSpy mock'lu, gerçek `data/`'ya
+yazmaz).
+
+```bash
+git clone https://github.com/<kullanici>/linkedin-cv-tailor.git
+cd linkedin-cv-tailor
+uv sync
+make test
+```
+
+**Bağlantılar:**
+
+| Konu | Nerede |
+|---|---|
+| Katkı rehberi (kurulum, branch, test, PR) | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| Davranış kuralları | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) |
+| Güvenlik açığı bildirimi (herkese açık issue açmayın) | [SECURITY.md](SECURITY.md) |
+| Hata / özellik önerisi | GitHub issue şablonları |
+| CI | `.github/workflows/tests.yml` — her push/PR'da `make check` + `make test-clean` |
+
+**Akış:** fork → branch → commit → PR. PR'lar public repoda incelenir; merge
+edilen değişiklik bakımcı tarafından private repoya alınır ve bir sonraki
+yayında public'e yansır. Bu sırada commit SHA'sı değişebilir; katkınızın
+geçmişte görünmesi bir sonraki yayını bekleyebilir.
+
+**İyi başlangıç konuları:** İngilizce README çevirisi, yeni testler, README
+sorun giderme bölümü, yeni bildirim kanalı. Büyük değişiklikler için önce
+issue açın.
 
 ---
 

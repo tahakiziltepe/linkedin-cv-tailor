@@ -23,3 +23,7 @@
   (`PUBLISH_SKIP_GUARD=1` / `PUBLISH_SKIP_TESTS=1` acil kaçışları)
 - Opt-in canlı test (`make test-live`) ve temiz makine simülasyonu
   (`make test-clean`)
+- Katkı altyapısı: GitHub Actions CI (offline), issue/PR şablonları,
+  `CODE_OF_CONDUCT.md`, `SECURITY.md`, README §10 katkı bölümü
+- `publish.sh`: public repo'da merge edilmiş katkı varsa yayını durduran
+  divergence kilidi; `.github` ve katkı dosyaları allow-list'te

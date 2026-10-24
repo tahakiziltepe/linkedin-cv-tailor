@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Kurulum ve sorun giderme (README)
+    url: https://github.com/tahakiziltepe/linkedin-cv-tailor#readme
+    about: Kurulum, .env, model adı ve scrape sorunları için önce README'ye bakın.
+  - name: Katkı rehberi
+    url: https://github.com/tahakiziltepe/linkedin-cv-tailor/blob/main/CONTRIBUTING.md
+    about: Geliştirme akışı, testler ve PR kontrol listesi.
+  - name: Güvenlik açığı
+    url: https://github.com/tahakiziltepe/linkedin-cv-tailor/security/advisories/new
+    about: Lütfen güvenlik açıkları için herkese açık issue açmayın.

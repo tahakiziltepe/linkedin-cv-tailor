@@ -1,0 +1,77 @@
+name: Hata bildirimi
+description: Beklenmeyen bir davranış, çökme veya yanlış çıktı
+title: "[bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Teşekkürler! Lütfen **API anahtarı, Telegram token'ı veya kişisel CV
+        içeriği paylaşmayın**. Loglarda token varsa `***` ile redakte edin.
+
+        Kurulum sorunları için önce README §5 ("1 yıl sonra muhtemelen
+        bozulacak şeyler") bölümüne bakın.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: Ne oldu?
+      description: Beklediğiniz ve gerçekleşen davranışı yazın.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Yeniden üretme adımları
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: command
+    attributes:
+      label: Çalıştırılan komut
+      placeholder: make test / uv run python main.py -q "data engineer"
+  - type: textarea
+    id: doctor
+    attributes:
+      label: doctor.py --offline çıktısı
+      description: "Komut: GEMINI_API_KEY=dummy uv run python doctor.py --offline"
+      render: shell
+  - type: textarea
+    id: logs
+    attributes:
+      label: İlgili log veya hata metni
+      description: Token, anahtar ve kişisel verileri redakte edin.
+      render: shell
+  - type: dropdown
+    id: area
+    attributes:
+      label: Etkilenen alan
+      multiple: true
+      options:
+        - Kurulum / bağımlılıklar
+        - LinkedIn araması (JobSpy)
+        - Gemini / model adı
+        - CV uyarlama / prompt
+        - PDF / Typst
+        - Web paneli
+        - Testler / CI
+        - Diğer
+  - type: input
+    id: environment
+    attributes:
+      label: Ortam
+      placeholder: "Örn: Ubuntu 24.04, Python 3.12.8, uv 0.8.2"
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Kontrol listesi
+      options:
+        - label: README §5 bölümüne baktım
+          required: true
+        - label: Aynı sorun için açılmış bir issue yok
+          required: true
+        - label: Gizli bilgi (API anahtarı, token, kişisel CV) paylaşmadım
+          required: true

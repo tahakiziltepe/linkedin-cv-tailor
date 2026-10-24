@@ -1,0 +1,48 @@
+name: Özellik önerisi
+description: Yeni bir özellik, iyileştirme veya dokümantasyon fikri
+title: "[feat]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Büyük değişiklikler için önce issue açıp yaklaşımı netleştirmek,
+        PR'ın boşa emek olmasını önler. Küçük düzeltmeler için doğrudan PR
+        açabilirsiniz.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Hangi sorunu çözüyor?
+      description: Mevcut durumda ne zor/eksik?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Önerilen çözüm
+      description: Nasıl çalışmasını istersiniz? Alternatifler?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Alan
+      multiple: true
+      options:
+        - LinkedIn araması / filtreleme
+        - Gemini / prompt'lar
+        - CV / Typst şablonu
+        - PDF üretimi
+        - Web paneli
+        - Bildirimler (Telegram vb.)
+        - Testler / CI
+        - Dokümantasyon / çeviri
+        - Diğer
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Kontrol listesi
+      options:
+        - label: Benzer bir issue/PR olup olmadığını aradım
+          required: true
+        - label: Bu değişikliği kendim yapmaya istekliyim

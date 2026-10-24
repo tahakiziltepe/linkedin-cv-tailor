@@ -45,6 +45,10 @@ def repo(tmp_path):
     subprocess.run(["git", "init", "--bare", "-q", str(bare)], check=True)
     git(dest, "remote", "add", "origin", str(bare))
     git(dest, "push", "-qu", "origin", "main")
+
+    # Public repo ayri bir bare repo (gercek hayatta oldugu gibi).
+    public_bare = tmp_path / "public.git"
+    subprocess.run(["git", "init", "--bare", "-q", str(public_bare)], check=True)
     return dest
 
 
@@ -54,7 +58,7 @@ def publish(repo, tmp_path, extra_env=None):
     env = os.environ.copy()
     env.update(
         {
-            "PUBLIC_REPO_URL": str(tmp_path / "remote.git"),
+            "PUBLIC_REPO_URL": str(tmp_path / "public.git"),
             "PUB_DIR": str(tmp_path / "public"),
             "STAGE_ROOT": str(stage_root),
             "DRY": "1",
@@ -88,8 +92,14 @@ def test_clean_repo_publishes_snapshot(repo, tmp_path):
     assert (stage / "src" / "prompts.py").exists()
     assert (stage / "tests" / "test_prompts.py").exists()
     assert (stage / "data" / "base_cv.typ").exists()
+    assert (stage / ".github" / "workflows" / "tests.yml").exists()
+    assert (stage / ".github" / "ISSUE_TEMPLATE" / "bug_report.yml").exists()
+    assert (stage / "CODE_OF_CONDUCT.md").exists()
+    assert (stage / "SECURITY.md").exists()
     assert not (stage / "data" / "prompts").exists()
     assert not (stage / ".env").exists()
+    assert not list(stage.rglob("__pycache__"))
+    assert not list(stage.rglob("*.pyc"))
 
 
 def test_wrong_branch_blocked(repo, tmp_path):
@@ -159,3 +169,32 @@ def test_passing_tests_allow_publish(repo, tmp_path):
     )
     assert result.returncode == 0, result.stdout + result.stderr
     assert "yayına hazır" in result.stdout
+
+
+def test_public_divergence_blocked(repo, tmp_path):
+    """Public'te merge edilmis bir katki varsa yayin sessizce ezmemeli."""
+    identity = {
+        "GIT_AUTHOR_NAME": "Test",
+        "GIT_AUTHOR_EMAIL": "test@example.com",
+        "GIT_COMMITTER_NAME": "Test",
+        "GIT_COMMITTER_EMAIL": "test@example.com",
+    }
+    first = publish(repo, tmp_path, extra_env={"DRY": "0", **identity})
+    assert first.returncode == 0, first.stdout + first.stderr
+
+    # Katkici public repoya PR merge etmis gibi bir commit atar.
+    contrib = tmp_path / "contributor"
+    subprocess.run(
+        ["git", "clone", "-q", "-b", "main", str(tmp_path / "public.git"), str(contrib)],
+        check=True,
+    )
+    git(contrib, "config", "user.email", "contrib@example.com")
+    git(contrib, "config", "user.name", "Contributor")
+    (contrib / "CONTRIBUTING.md").write_text("# Katki\n", encoding="utf-8")
+    git(contrib, "commit", "-qam", "docs: contributor change")
+    git(contrib, "push", "-q", "origin", "main")
+
+    second = publish(repo, tmp_path, extra_env={"DRY": "0", **identity})
+    assert second.returncode == 1
+    assert "lokal kopyada olmayan" in second.stdout
+    assert "private main" in second.stdout

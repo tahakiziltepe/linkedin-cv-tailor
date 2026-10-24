@@ -27,7 +27,9 @@ fi
 # --- 1) allow-list snapshot ---
 FILELIST=(
     .env.example .gitignore .python-version uv.lock pyproject.toml
-    README.md CHANGELOG.md CONTRIBUTING.md LICENSE Makefile config.toml
+    README.md CHANGELOG.md CONTRIBUTING.md CODE_OF_CONDUCT.md SECURITY.md
+    LICENSE Makefile config.toml
+    .github
     doctor.py main.py run_daily.sh
     src/job_search.py src/cv_tailor.py src/pdf_generator.py
     src/tracker.py src/notifier.py src/status_logger.py src/prompts.py
@@ -114,10 +116,12 @@ cp "$STAGE_DIR/templates/base_cv.example.typ" "$STAGE_DIR/data/base_cv.typ"
 echo '[]' > "$STAGE_DIR/data/blocked_companies.json"
 
 # --- 2) kişisel-veri taraması ---
-# Not: LICENSE + pyproject (yazar adi public), README (proje URL'leri) ve
-# tools/publish.sh (kendi kalibri) kasıtlı olarak scan'e dahil degil.
+# Not: LICENSE + pyproject (yazar adi public), README (proje URL'leri),
+# .github (repo/issue URL'leri), SECURITY.md + CODE_OF_CONDUCT.md (bildirim
+# adresi) ve tools/publish.sh (kendi kalibri) kasıtlı olarak scan'e dahil degil.
 HITS=$(grep -rInE '(tahakiziltepe|mtahakiziltepe|kiziltepe|tahakiziltepe@hotmail|\+90 ?\(?53[0-9]\)? ?[0-9]{3} ?[0-9]{3})' \
     --exclude=publish.sh --exclude=LICENSE --exclude=pyproject.toml --exclude=README.md \
+    --exclude=SECURITY.md --exclude=CODE_OF_CONDUCT.md --exclude-dir=.github \
     "$STAGE_DIR" 2>/dev/null | grep -v '^Binary' || true)
 if [ -n "$HITS" ]; then
     echo "UYARI! Teyit edilmemis kişisel veri kalıntısı bulundu:"
@@ -137,6 +141,28 @@ fi
 if [ ! -d "$PUB_DIR/.git" ]; then
     git clone "$PUBLIC_REPO_URL" "$PUB_DIR"
 fi
+
+# Bos public repo: ilk commit'in 'main' uzerine gitmesini garantile.
+if ! git -C "$PUB_DIR" rev-parse --verify -q HEAD >/dev/null; then
+    git -C "$PUB_DIR" checkout -q -B main
+fi
+
+# Public'te lokal kopyada olmayan commit varsa (orn. merge edilmis bir katki
+# PR'i) sessizce uzerine yazma: once private main'e alinmasi gerekir.
+if git -C "$PUB_DIR" rev-parse --verify -q HEAD >/dev/null; then
+    if git -C "$PUB_DIR" fetch -q origin main 2>/dev/null; then
+        BEHIND=$(git -C "$PUB_DIR" rev-list --count HEAD..origin/main)
+        if [ "$BEHIND" != "0" ]; then
+            echo "YAYIN ENGELLENDİ: public repo'da lokal kopyada olmayan $BEHIND commit var."
+            echo "  Bu genelde merge edilmiş bir katkı PR'ı demektir; rsync onu geri alırdı."
+            echo "  Çözüm: değişikliği önce private main'e al, sonra:"
+            echo "    git -C \"$PUB_DIR\" pull --ff-only"
+            echo "  ve yayını tekrar çalıştır."
+            exit 1
+        fi
+    fi
+fi
+
 rsync -a --delete --exclude .git --exclude .env --exclude data/output "$STAGE_DIR/" "$PUB_DIR/"
 cd "$PUB_DIR"
 if git diff --quiet && [ -z "$(git ls-files --others --exclude-standard)" ]; then

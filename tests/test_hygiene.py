@@ -23,6 +23,8 @@ TEXT_SUFFIXES = {
     ".sh",
     ".typ",
     ".json",
+    ".yml",
+    ".yaml",
     ".example",
     ".gitignore",
 }
@@ -36,6 +38,8 @@ ROOT_REQUIRED = {
     "README.md",
     "CHANGELOG.md",
     "CONTRIBUTING.md",
+    "CODE_OF_CONDUCT.md",
+    "SECURITY.md",
     "LICENSE",
     "Makefile",
     "config.toml",
@@ -47,6 +51,17 @@ ROOT_REQUIRED = {
     "webapp/web_app.py",
     "webapp/static/css/styles.css",
     "webapp/static/js/main.js",
+}
+
+CONTRIBUTION_FILES = {
+    ".github/workflows/tests.yml",
+    ".github/pull_request_template.md",
+    ".github/ISSUE_TEMPLATE/bug_report.yml",
+    ".github/ISSUE_TEMPLATE/feature_request.yml",
+    ".github/ISSUE_TEMPLATE/config.yml",
+    "CODE_OF_CONDUCT.md",
+    "SECURITY.md",
+    "CONTRIBUTING.md",
 }
 
 
@@ -158,8 +173,46 @@ def test_publish_allow_list_is_complete():
             or (path.startswith("webapp/templates/") and path.endswith(".html"))
             or (path.startswith("tools/") and path.endswith((".py", ".sh")))
             or path.startswith("tests/")
+            or path.startswith(".github/")
             or path in ROOT_REQUIRED
         )
         if relevant and not is_covered(path, entries):
             missing.append(path)
     assert missing == [], f"allow-list'te eksik: {missing}"
+
+
+def test_contribution_files_exist_and_are_tracked():
+    """Katki dosyalari hem var hem git'te takipli olmali (public'e gider)."""
+    tracked = set(tracked_files())
+    for rel in sorted(CONTRIBUTION_FILES):
+        path = ROOT / rel
+        assert path.is_file(), f"eksik dosya: {rel}"
+        assert rel in tracked, f"git'te takipli degil: {rel}"
+
+
+def test_ci_workflow_runs_offline_tests():
+    """CI, API anahtari gerektirmeyen offline paketi calistirmali."""
+    text = (ROOT / ".github" / "workflows" / "tests.yml").read_text(encoding="utf-8")
+    assert "pull_request" in text
+    assert "uv sync --frozen" in text
+    assert "make check" in text
+    assert "make test-clean" in text
+    # Gercek API cagrisi yapan hedef CI'da olmamali.
+    assert "make test-live" not in text
+
+
+def test_contributing_links_and_no_key_setup():
+    text = (ROOT / "CONTRIBUTING.md").read_text(encoding="utf-8")
+    for rel in ("CODE_OF_CONDUCT.md", "SECURITY.md"):
+        assert rel in text, f"CONTRIBUTING icinde {rel} baglantisi yok"
+    assert "make test" in text
+    # Katkici icin API anahtari zorunlu olmamali.
+    assert "API anahtarı gerekmez" in text
+
+
+def test_readme_links_contribution_guide():
+    text = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "CONTRIBUTING.md" in text
+    assert "CODE_OF_CONDUCT.md" in text
+    assert "SECURITY.md" in text
+    assert "## 10) Katkıda bulunma" in text
