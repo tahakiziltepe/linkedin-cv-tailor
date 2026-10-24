@@ -16,6 +16,7 @@ set -euo pipefail
 BASE_DIR=$(cd "$(dirname "$0")/.." && pwd)
 PUB_DIR="${PUB_DIR:-/tmp/opencode/cv-builder-public}"
 STAGE_ROOT="${STAGE_ROOT:-/tmp/opencode}"
+mkdir -p "$STAGE_ROOT"
 STAGE_DIR=$(mktemp -d "$STAGE_ROOT/cv-builder-stage.XXXXXX")
 trap 'rm -rf "$STAGE_DIR"' EXIT
 
@@ -107,8 +108,11 @@ fi
 for f in "${FILELIST[@]}"; do
     [ -f "$f" ] || [ -d "$f" ] || { echo "EKSİK dosya (allow-list): $f"; exit 1; }
 done
-printf '%s\n' "${FILELIST[@]}" | rsync -a -r --exclude='__pycache__' --exclude='.pytest_cache' --files-from=- . "$STAGE_DIR/"
+printf '%s\n' "${FILELIST[@]}" | rsync -a -r --exclude='__pycache__' --exclude='.pytest_cache' --exclude='publish.yml' --files-from=- . "$STAGE_DIR/"
 echo "[snapshot] ${#FILELIST[@]} dosya stage'lendi."
+
+# Private CI workflow dosyasını (publish.yml) public repoya aktarma
+rm -f "$STAGE_DIR/.github/workflows/publish.yml"
 
 # Inject data dosyalari her senaryoda orneklerle dolu gelsin:
 mkdir -p "$STAGE_DIR/data"
@@ -139,6 +143,7 @@ if [ "${DRY:-0}" = "1" ]; then
     exit 0
 fi
 if [ ! -d "$PUB_DIR/.git" ]; then
+    mkdir -p "$(dirname "$PUB_DIR")"
     git clone "$PUBLIC_REPO_URL" "$PUB_DIR"
 fi
 
@@ -163,7 +168,7 @@ if git -C "$PUB_DIR" rev-parse --verify -q HEAD >/dev/null; then
     fi
 fi
 
-rsync -a --delete --exclude .git --exclude .env --exclude data/output "$STAGE_DIR/" "$PUB_DIR/"
+rsync -a --delete --exclude .git --exclude .env --exclude data/output --exclude publish.yml "$STAGE_DIR/" "$PUB_DIR/"
 cd "$PUB_DIR"
 if git diff --quiet && [ -z "$(git ls-files --others --exclude-standard)" ]; then
     echo "Değişiklik yok, push gerekmez."

@@ -26,3 +26,6 @@ data/prompts_history/
 config.local.toml
 run_daily.log
 
+# OpenCode yerel çalışma dosyaları
+.opencode/
+

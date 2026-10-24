@@ -93,6 +93,7 @@ def test_clean_repo_publishes_snapshot(repo, tmp_path):
     assert (stage / "tests" / "test_prompts.py").exists()
     assert (stage / "data" / "base_cv.typ").exists()
     assert (stage / ".github" / "workflows" / "tests.yml").exists()
+    assert not (stage / ".github" / "workflows" / "publish.yml").exists()
     assert (stage / ".github" / "ISSUE_TEMPLATE" / "bug_report.yml").exists()
     assert (stage / "CODE_OF_CONDUCT.md").exists()
     assert (stage / "SECURITY.md").exists()
