@@ -16,3 +16,10 @@
 - Prompt'lar ayrı dosyalarda (`prompts/`); web panelinden düzenleme, kuru
   önizleme, varsayılana dönme ve son 20 sürüm yedeği (`data/prompts/`,
   `data/prompts_history/`)
+- Kapsamlı offline test paketi (`make test`, pytest): prompt'lar, tracker,
+  PDF/Typst, Gemini/Telegram/JobSpy mock'ları, web paneli, `main.py` akışı,
+  `publish.sh` guard senaryoları ve hijyen kontrolleri
+- Yayın kapısı: `publish.sh` testler geçmeden public'e göndermez
+  (`PUBLISH_SKIP_GUARD=1` / `PUBLISH_SKIP_TESTS=1` acil kaçışları)
+- Opt-in canlı test (`make test-live`) ve temiz makine simülasyonu
+  (`make test-clean`)

@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).parent
-DATA_DIR = BASE_DIR / 'data'
+DATA_DIR = Path(os.getenv("CV_DATA_DIR", str(BASE_DIR / 'data')))
 DATABASE_DIR = DATA_DIR / 'database'
 OUTPUT_DIR = DATA_DIR / 'output'
 

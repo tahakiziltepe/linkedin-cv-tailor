@@ -525,7 +525,46 @@ Acil bir durumda `PUBLISH_SKIP_GUARD=1` ile kontroller atlanabilir.
 - `data/prompts/` gitignore'lu olduğu için kişisel düzenlemeler public repo'ya
   gitmez. `prompts/` dosyalarını değiştirirsen bu değişiklik yayınlanır.
 
+### 9.8) Testler ve yayın öncesi kontrol
+
+Tüm uygulama (prompt'lar, tracker, PDF, web paneli, `main.py` akışı ve
+`publish.sh` kilidi) ağ/API gerektirmeyen bir pytest paketiyle test edilir.
+
+```bash
+make test        # offline paket (yayın öncesi zorunlu)
+make test-live   # gerçek Gemini çağrısı (opt-in, kota harcar)
+make test-all    # ikisi
+make test-clean  # temiz makine simülasyonu (yavaş)
+make check       # py_compile + doctor --offline + test
+```
+
+**Yayın kapısı:** `tools/publish.sh` stage'lemeden önce `make test`
+çalıştırır. Testlerden biri düşerse yayın durur. Acil durumda
+`PUBLISH_SKIP_GUARD=1` (tüm kilit) veya `PUBLISH_SKIP_TESTS=1` (yalnızca test
+kapısı) kullanılabilir; ikisi de yüksek sesli uyarı verir.
+
+**Kapsam:**
+
+- `src/prompts.py`: yükleme/override/render/kaydetme/yedek limiti.
+- `src/tracker.py`, `src/status_logger.py`: JSON kalıcılığı ve bozuk dosya.
+- `src/pdf_generator.py`: gerçek Typst derlemesi.
+- `src/cv_tailor.py`: Gemini mock'lu; uygunluk, uyarlama, onarım ve fail-safe.
+- `src/notifier.py`, `src/job_search.py`: ağ mock'lu.
+- `webapp/web_app.py`: giriş, korumalı route'lar, dashboard, prompt paneli,
+  API'ler ve indirme güvenliği.
+- `main.py`: tüm dış servisler mock'lu uçtan uca akış (uygun/uygunsuz/
+  engelli/mükerrer/derleme hatası + onarım).
+- `tools/publish.sh`: guard senaryoları (branch, senkron, kirli, takipsiz),
+  allow-list bütünlüğü ve snapshot içeriği.
+- Hijyen: prompt metinlerinin regresyonu, garble taraması, kişisel verinin
+  public allow-list'e girmediğinin kontrolü.
+
+**Yeni test ekleme:** `tests/test_*.py` dosyasına yaz; gerçek `data/`
+dizinine yazma, `tmp_path` kullan. Ağ/API çağrısı yapacak testleri
+`@pytest.mark.live` ile işaretle; bunlar `make test` içinde çalışmaz.
+
 ---
 
 *Son güncelleme ve doğrulama: 2026-10-24 — `gemini-3.1-flash-lite-preview` ile
-uçtan uca çalıştırımda 1 ilan işlendi ve PDF üretildi. MIT lisanslı (LICENSE).*
+uçtan uca çalıştırımda 1 ilan işlendi ve PDF üretildi. `make test` 108,
+`make test-clean` 2, `make test-live` 1 test ile geçti. MIT lisanslı (LICENSE).*

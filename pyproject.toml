@@ -14,3 +14,16 @@ dependencies = [
     "python-jobspy>=1.1.82",
     "typst>=0.14.7",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = [
+    "live: gercek Gemini API cagrisi yapar (RUN_LIVE_TESTS=1)",
+    "clean: temiz makine simulasyonu (yavas)",
+]

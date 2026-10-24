@@ -16,8 +16,9 @@ tercih edilir.
 2. `uv run python doctor.py` ile ortamın sağlıklı oldugunu doğrula.
 3. Degisikligi kucuk ve tek amaclu tut; aciklamayi PR metnine yaz.
 4. README'yi güncelle (uyarlar, komutlar, arıza notları).
-5. Test yoksa en azindan `uv run python -m py_compile main.py src/*.py`
-   calistir.
+5. `make test` calistir (offline, ag/API gerektirmez). Yeni davranis icin
+   `tests/` altina test ekle; gercek API cagrisi gerekiyorsa
+   `@pytest.mark.live` kullan.
 
 ## Bilinmesi gereken
 

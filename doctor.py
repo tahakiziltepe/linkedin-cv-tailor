@@ -1,4 +1,4 @@
-"""Ortam self-testi: uv run python doctor.py
+"""Ortam self-testi: uv run python doctor.py [--offline]
 
 Kontroller:
 1- bagimliliklar import edilebilir mi
@@ -7,9 +7,14 @@ Kontroller:
 4- TELEGRAM anahtari gecerli mi (mesaj gonderilmez, sadece getMe)
 5- typst derliyor mu (mini .typ -> PDF)
 6- tracker.json yazma/okuma smoke test
+7- prompt dosyalari + token'lari
 
-Cikis kodu: FAIL varsa 0\'dan farkli.
+--offline: ag cagrilari (Gemini/Telegram) atlanir; testler ve kuru kontrol
+icin kullanilir.
+
+Cikis kodu: FAIL varsa 0'dan farkli.
 """
+import argparse
 import os
 import sys
 import tempfile
@@ -26,130 +31,159 @@ except ImportError:
 
 load_dotenv(BASE / ".env")
 
-RESULTS = []
 
+def run_checks(offline=False):
+    """Tum kontrolleri calistirir; seviye listesini dondurur."""
+    results = []
 
-def add(level, name, detail=""):
-    RESULTS.append(level)
-    line = f"[{level:4}] {name}"
-    if detail:
-        line += f"  -> {detail}"
-    print(line)
+    def add(level, name, detail=""):
+        results.append(level)
+        line = f"[{level:4}] {name}"
+        if detail:
+            line += f"  -> {detail}"
+        print(line)
 
-
-# 1) bagimliliklar
-try:
-    import jobspy  # noqa: F401
-    import google.genai  # noqa: F401
-    import typst  # noqa: F401
-    import pandas  # noqa: F401
-    import flask  # noqa: F401
-
-    add("PASS", "bagimlilik importlari")
-except Exception as e:
-    add("FAIL", "bagimlilik importlari", str(e)[:120])
-    print("\nFix: uv sync")
-    sys.exit(1)
-
-# 2) .env anahtarlari
-gemini = os.environ.get("GEMINI_API_KEY", "").strip()
-telegram = os.environ.get("TELEGRAM_TOKEN", "").strip()
-if gemini:
-    add("PASS", "GEMINI_API_KEY var")
-else:
-    add("FAIL", "GEMINI_API_KEY yok - pipeline calismaz", ".env'e ekle")
-if telegram:
-    add("PASS", "TELEGRAM_TOKEN var")
-else:
-    add("WARN", "TELEGRAM_TOKEN yok - bildirim yok, CV yine uretilir")
-if not os.environ.get("SECRET_KEY"):
-    add("WARN", "SECRET_KEY yok - web panel baslamaz", ".env'e ekle")
-
-# 3) Gemini + model adi
-if gemini:
+    # 1) bagimliliklar
     try:
-        import src.cv_tailor as ct
+        import jobspy  # noqa: F401
+        import google.genai  # noqa: F401
+        import typst  # noqa: F401
+        import pandas  # noqa: F401
+        import flask  # noqa: F401
 
-        if not ct.client:
-            add("FAIL", "gemini client", "client olusturulamadi")
-        else:
-            r = ct.client.models.generate_content(
-                model=ct.GEMINI_MODEL_FLASH, contents="Reply: OK"
-            )
-            body = (r.text or "").strip()
-            ok = bool(body)  # 200 + bos olmayan cevap = model adi gecerli
-            add("PASS" if ok else "FAIL", f"gemini model: {ct.GEMINI_MODEL_FLASH}", body[:40])
+        add("PASS", "bagimlilik importlari")
     except Exception as e:
-        msg = str(e)[:160]
-        add("FAIL", "gemini cagrisi", msg)
-        if "404" in msg or "no longer available" in msg:
-            print("  -> Model kapanmis olabilir. README 5.1 bolumunu uygula.")
+        add("FAIL", "bagimlilik importlari", str(e)[:120])
+        print("\nFix: uv sync")
+        return results
 
-# 4) Telegram getMe (mesaj gonderilmez)
-if telegram:
-    try:
-        import requests
-
-        resp = requests.post(
-            f"https://api.telegram.org/bot{telegram}/getMe", timeout=10
-        ).json()
-        bot = (resp.get("result") or {}).get("username", "?")
-        add("PASS" if resp.get("ok") else "FAIL", f"telegram bot: @{bot}")
-    except Exception as e:
-        add("FAIL", "telegram getMe", str(e)[:120])
-
-# 5) typst
-try:
-    with tempfile.TemporaryDirectory() as d:
-        tmp = Path(d)
-        (tmp / "t.typ").write_text("Merhaba *dunya* #set page(margin: 1cm)")
-        typst.compile(str(tmp / "t.typ"), output=str(tmp / "t.pdf"))
-        size = (tmp / "t.pdf").stat().st_size
-        add("PASS", f"typst derleme ({size} bayt)")
-except Exception as e:
-    add("FAIL", "typst derleme", str(e)[:160])
-    print("  -> README 5.3 bolumu: surum sabitleme")
-
-# 6) tracker
-try:
-    from src.tracker import JobTracker
-
-    with tempfile.TemporaryDirectory() as d:
-        t = JobTracker(Path(d))
-        t.add_job({"company": "X", "title": "Y", "url": "u", "pdf_path": None})
-        assert t.job_exists("u") and t.delete_job("u")
-        add("PASS", "tracker JSON yazma")
-except Exception as e:
-    add("FAIL", "tracker", str(e)[:120])
-
-# 7) prompt dosyalari
-try:
-    from src.prompts import PROMPT_TOKENS, load_prompt, missing_tokens
-
-    problems = []
-    for pname in PROMPT_TOKENS:
-        try:
-            ptext = load_prompt(pname)
-        except FileNotFoundError:
-            problems.append(f"{pname}: dosya yok")
-            continue
-        if not ptext.strip():
-            problems.append(f"{pname}: bos")
-            continue
-        eksik = missing_tokens(pname, ptext)
-        if eksik:
-            problems.append(f"{pname}: eksik token {', '.join(eksik)}")
-    if problems:
-        add("FAIL", "prompt dosyalari", "; ".join(problems))
+    # 2) .env anahtarlari
+    gemini = os.environ.get("GEMINI_API_KEY", "").strip()
+    telegram = os.environ.get("TELEGRAM_TOKEN", "").strip()
+    if gemini:
+        add("PASS", "GEMINI_API_KEY var")
     else:
-        add("PASS", f"prompt dosyalari ({len(PROMPT_TOKENS)})")
-except Exception as e:
-    add("FAIL", "prompt dosyalari", str(e)[:120])
+        add("FAIL", "GEMINI_API_KEY yok - pipeline calismaz", ".env'e ekle")
+    if telegram:
+        add("PASS", "TELEGRAM_TOKEN var")
+    else:
+        add("WARN", "TELEGRAM_TOKEN yok - bildirim yok, CV yine uretilir")
+    if not os.environ.get("SECRET_KEY"):
+        add("WARN", "SECRET_KEY yok - web panel baslamaz", ".env'e ekle")
 
-fails = sum(1 for lvl in RESULTS if lvl == "FAIL")
-print("\n---")
-if fails:
-    print(f"SONUC: {fails} FAIL - sorunlar yukarida")
-else:
-    print("SONUC: TAMAM")
-sys.exit(1 if fails else 0)
+    # 3) Gemini + model adi
+    if not gemini:
+        pass
+    elif offline:
+        add("SKIP", "gemini cagrisi", "offline")
+    else:
+        try:
+            import src.cv_tailor as ct
+
+            if not ct.client:
+                add("FAIL", "gemini client", "client olusturulamadi")
+            else:
+                r = ct.client.models.generate_content(
+                    model=ct.GEMINI_MODEL_FLASH, contents="Reply: OK"
+                )
+                body = (r.text or "").strip()
+                ok = bool(body)  # 200 + bos olmayan cevap = model adi gecerli
+                add("PASS" if ok else "FAIL", f"gemini model: {ct.GEMINI_MODEL_FLASH}", body[:40])
+        except Exception as e:
+            msg = str(e)[:160]
+            add("FAIL", "gemini cagrisi", msg)
+            if "404" in msg or "no longer available" in msg:
+                print("  -> Model kapanmis olabilir. README 5.1 bolumunu uygula.")
+
+    # 4) Telegram getMe (mesaj gonderilmez)
+    if not telegram:
+        pass
+    elif offline:
+        add("SKIP", "telegram getMe", "offline")
+    else:
+        try:
+            import requests
+
+            resp = requests.post(
+                f"https://api.telegram.org/bot{telegram}/getMe", timeout=10
+            ).json()
+            bot = (resp.get("result") or {}).get("username", "?")
+            add("PASS" if resp.get("ok") else "FAIL", f"telegram bot: @{bot}")
+        except Exception as e:
+            add("FAIL", "telegram getMe", str(e)[:120])
+
+    # 5) typst
+    try:
+        import typst
+
+        with tempfile.TemporaryDirectory() as d:
+            tmp = Path(d)
+            (tmp / "t.typ").write_text("Merhaba *dunya* #set page(margin: 1cm)")
+            typst.compile(str(tmp / "t.typ"), output=str(tmp / "t.pdf"))
+            size = (tmp / "t.pdf").stat().st_size
+            add("PASS", f"typst derleme ({size} bayt)")
+    except Exception as e:
+        add("FAIL", "typst derleme", str(e)[:160])
+        print("  -> README 5.3 bolumu: surum sabitleme")
+
+    # 6) tracker
+    try:
+        from src.tracker import JobTracker
+
+        with tempfile.TemporaryDirectory() as d:
+            t = JobTracker(Path(d))
+            t.add_job({"company": "X", "title": "Y", "url": "u", "pdf_path": None})
+            assert t.job_exists("u") and t.delete_job("u")
+            add("PASS", "tracker JSON yazma")
+    except Exception as e:
+        add("FAIL", "tracker", str(e)[:120])
+
+    # 7) prompt dosyalari
+    try:
+        from src.prompts import PROMPT_TOKENS, load_prompt, missing_tokens
+
+        problems = []
+        for pname in PROMPT_TOKENS:
+            try:
+                ptext = load_prompt(pname)
+            except FileNotFoundError:
+                problems.append(f"{pname}: dosya yok")
+                continue
+            if not ptext.strip():
+                problems.append(f"{pname}: bos")
+                continue
+            eksik = missing_tokens(pname, ptext)
+            if eksik:
+                problems.append(f"{pname}: eksik token {', '.join(eksik)}")
+        if problems:
+            add("FAIL", "prompt dosyalari", "; ".join(problems))
+        else:
+            add("PASS", f"prompt dosyalari ({len(PROMPT_TOKENS)})")
+    except Exception as e:
+        add("FAIL", "prompt dosyalari", str(e)[:120])
+
+    return results
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="Ortam self-testi")
+    parser.add_argument(
+        "--offline",
+        action="store_true",
+        help="Gemini/Telegram ag cagrilarini atla (test/kuru kontrol)",
+    )
+    args = parser.parse_args(argv)
+
+    results = run_checks(offline=args.offline)
+
+    fails = sum(1 for lvl in results if lvl == "FAIL")
+    print("\n---")
+    if fails:
+        print(f"SONUC: {fails} FAIL - sorunlar yukarida")
+    else:
+        print("SONUC: TAMAM")
+    return 1 if fails else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

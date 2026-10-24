@@ -8,12 +8,15 @@
 # Kullanim: PUBLIC_REPO_URL=https://github.com/me/repo ./tools/publish.sh
 #           PUBLISH_CONFIRM=1   (tarama uyarilarini gecmek icin)
 #           PUBLISH_SKIP_GUARD=1 (yayin kilidini atlamak icin - acil durum)
+#           PUBLISH_SKIP_TESTS=1 (test kapisini atlamak icin - sadece testler icin)
 #           PUB_DIR=...         (varsayilan: /tmp/opencode/cv-builder-public)
+#           STAGE_ROOT=...      (varsayilan: /tmp/opencode)
 set -euo pipefail
 
 BASE_DIR=$(cd "$(dirname "$0")/.." && pwd)
 PUB_DIR="${PUB_DIR:-/tmp/opencode/cv-builder-public}"
-STAGE_DIR=$(mktemp -d /tmp/opencode/cv-builder-stage.XXXXXX)
+STAGE_ROOT="${STAGE_ROOT:-/tmp/opencode}"
+STAGE_DIR=$(mktemp -d "$STAGE_ROOT/cv-builder-stage.XXXXXX")
 trap 'rm -rf "$STAGE_DIR"' EXIT
 
 if [ -z "${PUBLIC_REPO_URL:-}" ]; then
@@ -35,6 +38,7 @@ FILELIST=(
     data/database/users.example.json
     prompts/suitability.md prompts/tailor_cv.md prompts/fix_typst.md
     tools/hash_users.py tools/load_config.py tools/publish.sh
+    tests
 )
 cd "$BASE_DIR"
 
@@ -84,13 +88,24 @@ else
         echo "  Çözüm: git add <dosya> && git commit"
         exit 1
     fi
-    echo "[kilit] main + senkron + temiz: yayına hazır."
+
+    # Test kapisi: yayin oncesi tum offline testler gecmeli.
+    if [ "${PUBLISH_SKIP_TESTS:-0}" = "1" ]; then
+        echo "[UYARI] PUBLISH_SKIP_TESTS=1: test kapisi atlandi."
+    else
+        echo "[test] make test (offline)"
+        if ! uv run pytest -q -m "not live"; then
+            echo "YAYIN ENGELLENDİ: testler geçmedi. Önce 'make test' çalıştır."
+            exit 1
+        fi
+    fi
+    echo "[kilit] main + senkron + temiz + testler: yayına hazır."
 fi
 
 for f in "${FILELIST[@]}"; do
-    [ -f "$f" ] || { echo "EKSİK dosya (allow-list): $f"; exit 1; }
+    [ -f "$f" ] || [ -d "$f" ] || { echo "EKSİK dosya (allow-list): $f"; exit 1; }
 done
-printf '%s\n' "${FILELIST[@]}" | rsync -a --files-from=- . "$STAGE_DIR/"
+printf '%s\n' "${FILELIST[@]}" | rsync -a -r --exclude='__pycache__' --exclude='.pytest_cache' --files-from=- . "$STAGE_DIR/"
 echo "[snapshot] ${#FILELIST[@]} dosya stage'lendi."
 
 # Inject data dosyalari her senaryoda orneklerle dolu gelsin:
