@@ -476,6 +476,17 @@ Bu proje iki ayrı yerde yaşar; ikisini karıştırmayın:
    de eklenmelidir. Aksi halde dosya public repoda görünmez.
 5. `publish.sh` private branch'i push etmez; yayın ile yedekleme ayrı işlerdir.
 
+**Yayın kilidi:** `publish.sh` şu dört kontrolü yapar ve biri başarısızsa
+yayını durdurur:
+
+1. Aktif branch `main` olmalı.
+2. Lokal `HEAD`, `origin/main` ile aynı olmalı (yani önce private'a push).
+3. Allow-list dosyalarında commit edilmemiş değişiklik olmamalı.
+   (`data/` jurnali bu kontrolü tetiklemez.)
+4. Her allow-list dosyası git'te takipli olmalı.
+
+Acil bir durumda `PUBLISH_SKIP_GUARD=1` ile kontroller atlanabilir.
+
 ---
 
 *Son güncelleme ve doğrulama: 2026-10-24 — `gemini-3.1-flash-lite-preview` ile

@@ -6,8 +6,9 @@
 # NOT: Bu araç private branch'i push ETMEZ. Yayın ile yedekleme ayrı işlerdir;
 # geliştirme commit'leri ayrıca `git push origin main` ile yedeklenmelidir.
 # Kullanim: PUBLIC_REPO_URL=https://github.com/me/repo ./tools/publish.sh
-#           PUBLISH_CONFIRM=1 (tarama uyarilarini gecmek icin)
-#           PUB_DIR=...      (varsayilan: /tmp/opencode/cv-builder-public)
+#           PUBLISH_CONFIRM=1   (tarama uyarilarini gecmek icin)
+#           PUBLISH_SKIP_GUARD=1 (yayin kilidini atlamak icin - acil durum)
+#           PUB_DIR=...         (varsayilan: /tmp/opencode/cv-builder-public)
 set -euo pipefail
 
 BASE_DIR=$(cd "$(dirname "$0")/.." && pwd)
@@ -34,6 +35,56 @@ FILELIST=(
     tools/hash_users.py tools/load_config.py tools/publish.sh
 )
 cd "$BASE_DIR"
+
+# --- 0) yayın güvenlik kilidi ---
+# Yalnızca remote ile eşitlenmiş, temiz bir private main'den yayın yapılır.
+if [ "${PUBLISH_SKIP_GUARD:-0}" = "1" ]; then
+    echo "[UYARI] PUBLISH_SKIP_GUARD=1: yayın kilidi atlandı."
+else
+    CURRENT_BRANCH=$(git branch --show-current)
+    if [ "$CURRENT_BRANCH" != "main" ]; then
+        echo "YAYIN ENGELLENDİ: aktif branch '$CURRENT_BRANCH'; sadece 'main'den yayın yapılır."
+        echo "  Çözüm: git checkout main"
+        exit 1
+    fi
+
+    if ! git fetch -q origin main; then
+        echo "YAYIN ENGELLENDİ: 'origin main' güncellenemedi (ağ/remote hatası)."
+        exit 1
+    fi
+    LOCAL_SHA=$(git rev-parse HEAD)
+    REMOTE_SHA=$(git rev-parse origin/main)
+    if [ "$LOCAL_SHA" != "$REMOTE_SHA" ]; then
+        echo "YAYIN ENGELLENDİ: lokal main ile origin/main aynı değil."
+        echo "  lokal : $LOCAL_SHA"
+        echo "  remote: $REMOTE_SHA"
+        echo "  Çözüm: git push origin main   (veya git pull --ff-only)"
+        exit 1
+    fi
+
+    DIRTY=$(git diff --name-only HEAD -- "${FILELIST[@]}" || true)
+    if [ -n "$DIRTY" ]; then
+        echo "YAYIN ENGELLENDİ: yayınlanacak dosyalarda commit edilmemiş değişiklik var:"
+        echo "$DIRTY" | sed 's/^/  - /'
+        echo "  Çözüm: değişiklikleri commit'leyip pushla."
+        exit 1
+    fi
+
+    UNTRACKED=()
+    for f in "${FILELIST[@]}"; do
+        if ! git ls-files --error-unmatch "$f" >/dev/null 2>&1; then
+            UNTRACKED+=("$f")
+        fi
+    done
+    if [ ${#UNTRACKED[@]} -gt 0 ]; then
+        echo "YAYIN ENGELLENDİ: şu allow-list dosyaları git'te takipli değil:"
+        printf '  - %s\n' "${UNTRACKED[@]}"
+        echo "  Çözüm: git add <dosya> && git commit"
+        exit 1
+    fi
+    echo "[kilit] main + senkron + temiz: yayına hazır."
+fi
+
 for f in "${FILELIST[@]}"; do
     [ -f "$f" ] || { echo "EKSİK dosya (allow-list): $f"; exit 1; }
 done
