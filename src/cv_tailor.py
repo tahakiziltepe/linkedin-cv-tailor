@@ -209,7 +209,7 @@ def _tailor_cv_api(base_cv_content: str, job_description: str) -> str:
     -   **Content Authenticity**: You MUST NOT invent, fabricate, or exaggerate any information. All skills, experiences, and achievements must be derived directly from the `BASE_CV_TYPST`.
     -   **Data Preservation (CRITICAL)**: 
         *   **Do NOT touch the Header**: The name, location, email, github, linkedin, and phone definitions at the top MUST remain character-for-character INDENTICAL. 
-        *   **Preserve Escapes**: You MUST preserve all backslash escapes in contact info. For example, a contact like `you\@example.com` must remain `you\@example.com`. Do NOT strip the backslash to `you@example.com`.
+        *   **Preserve Escapes**: You MUST preserve all backslash escapes in contact info. For example, a contact like `you\\@example.com` must remain `you\\@example.com`. Do NOT strip the backslash to `you@example.com`.
         *   **No "Fixing"**: Do not attempt to "correct" what looks like a typo in the contact info or imports. Leave it exactly as in `BASE_CV_TYPST`.
     -   **Language & Tone**: Use professional, fluent, and action-oriented English (e.g., "Managed," "Developed," "Accelerated"). The tone should be confident and competent. Preserve technical jargon from the original CV.
     -   **Length**: The total length of the generated CV should be within +/- 5% of the original `BASE_CV_TYPST`'s content length. Avoid significant shortening or lengthening.
