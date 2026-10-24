@@ -1,0 +1,26 @@
+.env
+.venv
+
+__pycache__
+src/__pycache__
+
+tests
+
+data/output
+
+prompts
+flask_output_debug.log
+*.log
+
+# Kisisel veri dosyalari repoya girmez (ornekler: *.example.json)
+data/database/*.json
+!data/database/users.example.json
+data/blocked_companies.json
+
+# Kisisel CV - ornek: templates/base_cv.example.typ
+data/base_cv.typ
+
+# Kisisel çalıştırma ayarları
+config.local.toml
+run_daily.log
+

@@ -1,0 +1,24 @@
+# CV builder ayarlari — run_daily.sh buradan okur.
+# Not: main.py CLI parametreleri (--query vb.) bireysel calistirmada
+# kullanilir; bu dosya sadece gunluk toplu turlar icindir.
+
+limit = 100
+hours = 12
+# Bitirince data/ degisikliklerini otomatik commit+pushla (gunluk jurnal).
+# Orta katman onerisi: public kopyanlarda / disarida kullanma (false birak).
+# .env icinde AUTO_PUSH=1 ile gecersiz kiliabilir (.env önceliklidir).
+auto_push = false
+
+queries = [
+  "data engineer",
+  "analytics engineer",
+  "business intelligence",
+  "veri mühendisi",
+  "analitik mühendisi",
+  "iş zekası",
+]
+
+locations = [
+  "Turkey",
+  "Istanbul",
+]

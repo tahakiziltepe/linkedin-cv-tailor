@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Application Dashboard</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="header-title">
+                <h1>Application Tracker</h1>
+                <div class="header-subtitle">Manage and track your job applications efficiently</div>
+            </div>
+            
+            <div class="header-actions">
+                <a href="{{ url_for('logout') }}" class="btn btn-outline" style="text-decoration: none; padding: 0.5rem 1rem; border-radius: 4px; color: #333; border: 1px solid #ccc;">Çıkış Yap</a>
+            </div>
+        </header>
+
+        <!-- Stats Overview -->
+        <div class="stats-toggle-wrapper">
+            <button id="toggleStatsBtn" class="btn btn-outline" style="width: 100%; margin-bottom: 1rem;">
+                📈 İstatistikleri Göster / Gizle
+            </button>
+        </div>
+        <section class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-label">Total Applications</span>
+                </div>
+                <div class="stat-value">{{ jobs|length }}</div>
+            </div>
+
+            {% for status, count in status_counts.items() %}
+            <div class="stat-card{% if status == 'Blocked Company' %} blocked-companies-card{% endif %}"{% if status == 'Blocked Company' %} id="blockedCompaniesCard" title="Click to manage blocked companies" style="cursor:pointer;"{% endif %}>
+                <div class="stat-header">
+                    <span class="stat-label">{{ status }}</span>
+                    <span class="badge status-{{ status|replace(' ', '-') }}">
+                        <span class="badge-dot"></span>
+                    </span>
+                </div>
+                <div class="stat-value">{{ count }}</div>
+            </div>
+            {% endfor %}
+        </section>
+
+        <!-- Filters & Actions -->
+        <section class="actions-bar">
+            <div class="search-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" class="search-input"
+                    placeholder="Search by company, title, or query...">
+            </div>
+
+            <div class="filters-wrapper">
+                <div class="multi-select-wrapper" id="statusFilterWrapper">
+                    <div class="multi-select-toggle" id="statusFilterToggle">
+                        <span class="multi-select-label">All Statuses</span>
+                        <span class="multi-select-arrow">▾</span>
+                    </div>
+                    <div class="multi-select-dropdown" id="statusFilterDropdown">
+                        <div class="multi-select-actions">
+                            <button type="button" class="btn btn-outline btn-sm" id="statusFilterClear">Clear All</button>
+                        </div>
+                        <label class="multi-select-option">
+                            <input type="checkbox" value="Pending"> <span class="badge status-Pending"><span class="badge-dot"></span>Pending</span>
+                        </label>
+                        <label class="multi-select-option">
+                            <input type="checkbox" value="Applied"> <span class="badge status-Applied"><span class="badge-dot"></span>Applied</span>
+                        </label>
+                        <label class="multi-select-option">
+                            <input type="checkbox" value="First Touch"> <span class="badge status-First-Touch"><span class="badge-dot"></span>First Touch</span>
+                        </label>
+                        <label class="multi-select-option">
+                            <input type="checkbox" value="Interview"> <span class="badge status-Interview"><span class="badge-dot"></span>Interview</span>
+                        </label>
+                        <label class="multi-select-option">
+                            <input type="checkbox" value="Offer"> <span class="badge status-Offer"><span class="badge-dot"></span>Offer</span>
+                        </label>
+                        <label class="multi-select-option">
+                            <input type="checkbox" value="Rejected"> <span class="badge status-Rejected"><span class="badge-dot"></span>Rejected</span>
+                        </label>
+                        <label class="multi-select-option">
+                            <input type="checkbox" value="Ghosted"> <span class="badge status-Ghosted"><span class="badge-dot"></span>Ghosted</span>
+                        </label>
+                        <label class="multi-select-option">
+                            <input type="checkbox" value="Not Interested"> <span class="badge status-Not-Interested"><span class="badge-dot"></span>Not Interested</span>
+                        </label>
+                        <label class="multi-select-option">
+                            <input type="checkbox" value="Blocked Company"> <span class="badge status-Blocked-Company"><span class="badge-dot"></span>Blocked Company</span>
+                        </label>
+                    </div>
+                </div>
+                <button class="btn btn-primary" id="addJobBtn" style="margin-left: 1rem;">
+                    ➕ Add Job
+                </button>
+            </div>
+
+            <div class="text-sm text-muted font-medium">
+                Showing <span id="resultCount">{{ jobs|length }}</span> of <span id="totalCount">{{ jobs|length
+                    }}</span>
+            </div>
+        </section>
+
+        <!-- Data Table -->
+        <main class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 12%">Date & Query</th>
+                        <th style="width: 13%">Company</th>
+                        <th style="width: 17%">Role</th>
+                        <th style="width: 10%">Status</th>
+                        <th style="width: 13%">Notes</th>
+                        <th style="width: 13%">Other Postings</th>
+                        <th style="width: 12%">Files</th>
+                        <th style="width: 10%">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="jobsTableBody">
+                    <!-- JS will populate this -->
+                </tbody>
+            </table>
+        </main>
+
+        <!-- Pagination -->
+        <div id="pagination" class="pagination">
+            <button id="prevPage" class="btn btn-outline">Previous</button>
+            <div class="page-numbers">
+                <!-- Page numbers generated by JS -->
+            </div>
+            <button id="nextPage" class="btn btn-outline">Next</button>
+            <div id="pageInfo" class="text-sm text-muted" style="margin-left: 1rem;"></div>
+        </div>
+    </div>
+
+    <!-- Notes Modal -->
+    <div class="modal-overlay">
+        <div class="modal" id="notesModal">
+            <div class="modal-header">
+                <h3 class="modal-title">Edit Notes</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <textarea id="notesTextarea" class="form-control"
+                    placeholder="Add your notes about this application here..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline btn-cancel">Cancel</button>
+                <button class="btn btn-primary" id="saveNotesBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Job Modal -->
+    <div class="modal-overlay" id="addJobModalOverlay">
+        <div class="modal" id="addJobModal">
+            <div class="modal-header">
+                <h3 class="modal-title">Add Job Manually</h3>
+                <button class="modal-close" id="addJobModalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="jobCompany" class="form-label">Company <span style="color: red;">*</span></label>
+                    <input type="text" id="jobCompany" class="form-control" placeholder="Enter company name" required>
+                </div>
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label for="jobTitle" class="form-label">Title <span style="color: red;">*</span></label>
+                    <input type="text" id="jobTitle" class="form-control" placeholder="Enter job title" required>
+                </div>
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label for="jobUrl" class="form-label">URL (Optional)</label>
+                    <input type="url" id="jobUrl" class="form-control" placeholder="Enter job URL">
+                </div>
+                <div class="form-note" style="margin-top: 1rem; font-size: 0.875rem; color: #666;">
+                    <strong>Note:</strong> Status will be set to "Applied" by default.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="addJobCancelBtn">Cancel</button>
+                <button class="btn btn-primary" id="addJobSaveBtn">Add Job</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Blocked Companies Modal -->
+    <div class="modal-overlay" id="blockedCompaniesModalOverlay">
+        <div class="modal blocked-modal" id="blockedCompaniesModal">
+            <div class="modal-header">
+                <div class="blocked-modal-title-row">
+                    <h3 class="modal-title">Blocked Companies</h3>
+                    <span class="blocked-count-badge" id="blockedCountBadge">0</span>
+                </div>
+                <button class="modal-close" id="blockedCompaniesModalClose">&times;</button>
+            </div>
+            <div class="modal-body blocked-modal-body">
+                <!-- Existing blocked companies section -->
+                <div id="blockedCompaniesExistingSection">
+                    <div class="blocked-section-header">
+                        <span class="blocked-section-label">Blocked Companies</span>
+                        <button class="btn btn-outline btn-sm" id="blockedRemoveAllBtn" title="Remove all blocked companies">Remove All</button>
+                    </div>
+                    <div class="blocked-search-wrapper">
+                        <span class="blocked-search-icon">🔍</span>
+                        <input type="text" id="blockedSearchInput" class="blocked-search-input" placeholder="Search blocked companies...">
+                    </div>
+                    <div class="blocked-list-container" id="blockedListContainer">
+                        <ul id="blockedCompaniesExistingList" class="blocked-chips-list">
+                            <!-- Populated by JS -->
+                        </ul>
+                        <div id="blockedEmptyState" class="blocked-empty-state" style="display:none;">
+                            <span>🚫</span>
+                            <p>No blocked companies yet</p>
+                        </div>
+                        <div id="blockedNoResults" class="blocked-empty-state" style="display:none;">
+                            <span>🔍</span>
+                            <p>No companies match your search</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Add new companies section -->
+                <div class="blocked-add-section">
+                    <span class="blocked-section-label">Add New</span>
+                    <p class="blocked-add-hint">Enter one company name per line.</p>
+                    <textarea id="blockedCompaniesTextarea" class="form-control"
+                        placeholder="Company name&#10;Another company..." rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="blockedCompaniesCancelBtn">Cancel</button>
+                <button class="btn btn-primary" id="blockedCompaniesSaveBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Data for JS Initialization -->
+    <script>
+        window.INITIAL_JOBS_DATA = {{ jobs_json | safe }};
+        window.INITIAL_BLOCKED_COMPANIES = {{ blocked_companies | tojson }};
+    </script>
+
+    <script src="/static/js/main.js"></script>
+</body>
+
+</html>
