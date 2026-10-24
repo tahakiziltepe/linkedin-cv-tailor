@@ -445,8 +445,36 @@ locations = [ "Turkey", "Istanbul", "Remote" ]         # senin coğrafyan
 ### 9.5) Cron ile otomatikleştirme
 
 Bölüm 2'nin Adım G'sindeki cron örneği `run_daily.sh`'i `config.toml`
-aylarını devralarak çalıştırır; çıktı `run_daily.log` dosyasına akar —
+ayarlarını devralarak çalıştırır; çıktı `run_daily.log` dosyasına akar —
 günlük turları incelemenin en hızlı yolu bu logtur.
+
+### 9.6) Geliştirme ve yayın akışı
+
+Bu proje iki ayrı yerde yaşar; ikisini karıştırmayın:
+
+| Ne | Nerede | Nasıl |
+|---|---|---|
+| Geliştirme + günlük kayıtlar | private repo (`antigravity-cv-builder`), `main` | commit → `git push origin main` |
+| Yayınlanan sürüm | public repo (`linkedin-cv-tailor`) | sadece `tools/publish.sh` |
+
+**Kurallar:**
+
+1. Tüm geliştirme private `main` üzerinde yapılır. Riskli bir iş için kısa
+   ömürlü bir feature branch açılabilir; iş bitince hemen `main`'e merge edilip
+   branch silinir.
+2. Her commit'ten sonra private'a push edilir. Günlük `data/` değişiklikleri
+   `AUTO_PUSH=1` ile zaten otomatik gider.
+3. Public repoya **asla doğrudan commit atılmaz**. Güncelleme yalnızca:
+   ```bash
+   PUBLIC_REPO_URL=https://github.com/<kullanici>/linkedin-cv-tailor.git \
+     bash tools/publish.sh
+   ```
+   Bu komut allow-list dosyalarını anlık kopyalar, kişisel veri taraması yapar
+   ve temizse tek bir "Sync from private working repo" commit'i pushlar.
+   Public'teki git geçmişi private'tan **bağımsızdır**.
+4. Yeni bir dosya public'e gidecekse `tools/publish.sh` içindeki `FILELIST`'e
+   de eklenmelidir. Aksi halde dosya public repoda görünmez.
+5. `publish.sh` private branch'i push etmez; yayın ile yedekleme ayrı işlerdir.
 
 ---
 

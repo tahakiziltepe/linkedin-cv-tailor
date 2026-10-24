@@ -3,6 +3,8 @@
 # 1. rsync ile allow-list dosyaları stage'lenir
 # 2. kişisel-veri taraması (temiz değilse durur)
 # 3. public clone'da commit + push
+# NOT: Bu araç private branch'i push ETMEZ. Yayın ile yedekleme ayrı işlerdir;
+# geliştirme commit'leri ayrıca `git push origin main` ile yedeklenmelidir.
 # Kullanim: PUBLIC_REPO_URL=https://github.com/me/repo ./tools/publish.sh
 #           PUBLISH_CONFIRM=1 (tarama uyarilarini gecmek icin)
 #           PUB_DIR=...      (varsayilan: /tmp/opencode/cv-builder-public)
